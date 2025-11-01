@@ -1,0 +1,40 @@
+[
+  {
+    "id": "a1b2c3d4e5f6",
+    "type": "tab",
+    "label": "DWD Pollen Example",
+    "disabled": false,
+    "info": "Beispiel-Flow für node-red-contrib-dwd-pollen"
+  },
+  {
+    "id": "n1dwd",
+    "type": "dwd-pollen",
+    "z": "a1b2c3d4e5f6",
+    "name": "DWD Pollen (Niederrhein)",
+    "regionId": "101",
+    "allowNameFallback": true,
+    "additionalNames": "Niederrhein",
+    "dayFilter": "today",
+    "fetchOnDeploy": true,
+    "autoRefresh": 3600,
+    "includeTextLevels": true,
+    "x": 280,
+    "y": 140,
+    "wires": [["debug1"]]
+  },
+  {
+    "id": "debug1",
+    "type": "debug",
+    "z": "a1b2c3d4e5f6",
+    "name": "Pollen Data",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "x": 510,
+    "y": 140,
+    "wires": []
+  }
+]
