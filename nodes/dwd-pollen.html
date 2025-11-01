@@ -1,131 +1,127 @@
-<script type="text/javascript">
-    RED.nodes.registerType('dwd-pollen', {
-        category: 'function',
-        color: '#d9edf7',
-        icon: 'font-awesome/fa-leaf',
-        align: 'left',
-        defaults: {
-            name: { value: "DWD-Pollen" },
-            // Auswahlstrategie
-            partRegionId: { value: "", validate: function(v){ return true; } },
-            regionName: { value: "" },           // Freitext (z.B. "Nordrhein-Westfalen")
-            partRegionName: { value: "" },       // Freitext (z.B. "Niederrhein")
-            allowNameFallback: { value: true },  // Checkbox
-            extraNames: { value: "" },           // zusätzliche Namen (Komma-getrennt)
-
-            // Filter für Tage
-            dayMode: { value: "today", required: true }, // today|tomorrow|day_after_tomorrow|all
-
-            // Betriebsoptionen
-            fetchOnDeploy: { value: true },
-            autoRefreshSec: { value: 0 }, // 0 = aus
-
-            // Ausgabeoptionen (Texte)
-            includeTextLevels: { value: true }
-        },
-        inputs: 1,
-        outputs: 1,
-        outputLabels: ["pollen"],
-        label: function () {
-            return this.name || "DWD-Pollen";
-        },
-        oneditprepare: function () {
-            $("#node-input-dayMode").val(this.dayMode || "today");
-        }
-    });
-</script>
-
 <script type="text/html" data-template-name="dwd-pollen">
     <div class="form-row">
-        <label for="node-input-name"><i class="fa fa-tag"></i> Node-Name</label>
-        <input type="text" id="node-input-name" placeholder="DWD-Pollen">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="DWD Pollen (NRW West)">
     </div>
 
-    <hr/>
-
     <div class="form-row">
-        <label><i class="fa fa-map-marker"></i> Partregion-ID</label>
-        <input type="text" id="node-input-partRegionId" placeholder="z. B. 805 (optional)">
-    </div>
-    <div class="form-row">
-        <label><i class="fa fa-map"></i> Region-Name</label>
-        <input type="text" id="node-input-regionName" placeholder="z. B. Nordrhein-Westfalen (optional)">
-    </div>
-    <div class="form-row">
-        <label><i class="fa fa-map-o"></i> Teilregion-Name</label>
-        <input type="text" id="node-input-partRegionName" placeholder="z. B. Niederrhein (optional)">
-    </div>
-    <div class="form-row">
-        <label><i class="fa fa-exchange"></i> Name-Fallback zulassen</label>
-        <input type="checkbox" id="node-input-allowNameFallback" style="width:auto;">
-    </div>
-    <div class="form-row">
-        <label><i class="fa fa-plus"></i> zusätzliche Gebiets­namen</label>
-        <input type="text" id="node-input-extraNames" placeholder="Komma-getrennt, optional">
+        <label for="node-input-region"><i class="fa fa-map"></i> Region</label>
+        <select id="node-input-region" style="width: 100%;">
+            <option value="">– wird geladen … –</option>
+        </select>
+        <div class="form-tips">
+            Die Regionen/Teilregionen stammen aus dem offiziellen DWD-Pollenfeed.
+            Siehe auch <a href="https://www.dwd.de/DE/leistungen/gefahrenindizespollen/Gebiete.html"
+                          target="_blank" rel="noopener noreferrer">DWD – Pollen-Gebiete</a>.
+        </div>
     </div>
 
-    <hr/>
-
     <div class="form-row">
-        <label for="node-input-dayMode"><i class="fa fa-calendar"></i> Zeitraum</label>
-        <select id="node-input-dayMode">
-            <option value="today">nur heute</option>
-            <option value="tomorrow">nur morgen</option>
-            <option value="day_after_tomorrow">nur übermorgen</option>
-            <option value="all">alle (heute+morgen+übermorgen)</option>
+        <label for="node-input-partregion"><i class="fa fa-map-signs"></i> Teilregion</label>
+        <select id="node-input-partregion" style="width: 100%;">
+            <option value="">– bitte Region wählen –</option>
         </select>
     </div>
 
-    <hr/>
-
     <div class="form-row">
-        <label><i class="fa fa-rocket"></i> Beim Deploy sofort abrufen</label>
-        <input type="checkbox" id="node-input-fetchOnDeploy" style="width:auto;">
-    </div>
-    <div class="form-row">
-        <label><i class="fa fa-refresh"></i> Auto-Refresh (Sek.)</label>
-        <input type="number" id="node-input-autoRefreshSec" min="0" placeholder="0 = aus">
-    </div>
-
-    <div class="form-row">
-        <label><i class="fa fa-commenting"></i> Text-Beschreibungen</label>
-        <input type="checkbox" id="node-input-includeTextLevels" style="width:auto;">
-    </div>
-
-    <div class="form-tips">
-        Datenquelle: DWD Pollenflug-Gefahrenindex <code>s31fg.json</code> (täglich). Struktur/Doku: siehe DWD PDF.
+        <label for="node-input-refresh"><i class="fa fa-clock-o"></i> Auto-Refresh (Sek.)</label>
+        <input type="number" id="node-input-refresh" min="0" placeholder="0 = aus">
+        <div class="form-tips">
+            Optional: ruft den Pollenfeed automatisch alle X Sekunden ab (0 = deaktiviert).
+        </div>
     </div>
 </script>
 
 <script type="text/html" data-help-name="dwd-pollen">
     <p>
-        Liest den offiziellen DWD Pollenflug-Gefahrenindex (JSON <code>s31fg.json</code>) und gibt die Werte für
-        eine Region/Teilregion aus (heute, morgen, übermorgen).
+        Liest den offiziellen DWD-Pollen-JSON-Feed und liefert die Belastung je Pollenart
+        (heute/heute+1/heute+2) für eine gewählte Region & Teilregion.
     </p>
     <p>
-        Quellen:<br/>
-        • Verzeichnis & Datei: <code>.../health/alerts/s31fg.json</code><br/>
-        • PDF-Beschreibung: „Beschreibung_pollen_s31fg.pdf“
+        Die Auswahllisten werden beim Öffnen der Node aus dem DWD-Feed geladen
+        (über einen internen Proxy-Endpoint dieses Nodes).
     </p>
-    <p>Konfiguration:
-    <ul>
-        <li><b>Partregion-ID</b> (präferiert). Alternativ Region-/Teilregion-Namen und <i>Name-Fallback</i>.</li>
-        <li><b>Zeitraum</b>: heute / morgen / übermorgen / alle.</li>
-        <li><b>Beim Deploy abrufen</b> und <b>Auto-Refresh</b> in Sekunden.</li>
-        <li><b>Text-Beschreibungen</b>: numerische Stufen in Klartext (z. B. „mäßig“).</li>
-    </ul>
+    <p>
+        Weitere Infos & Gebietsübersicht:
+        <a href="https://www.dwd.de/DE/leistungen/gefahrenindizespollen/Gebiete.html"
+           target="_blank" rel="noopener noreferrer">DWD – Pollen-Gebiete</a>
     </p>
-    <p>Output:
-    <pre>{
-  "payload": {
-    "pollen": {
-      "Birke": {"today":2,"tomorrow":1,"day_after_tomorrow":0,"text":{"today":"mäßig",...}},
-      ...
-    },
-    "region": {"id":101,"region_name":"Nordrhein-Westfalen","partregion_name":"Niederrhein"},
-    "last_update": "2025-10-27T10:35:00Z"
-  },
-  "_meta": {"source":"DWD s31fg.json","url":"https://opendata.dwd.de/.../s31fg.json"}
-}</pre>
-    </p>
+</script>
+
+<script type="text/javascript">
+    (function() {
+        RED.nodes.registerType('dwd-pollen', {
+            category: 'function',
+            color: '#B5E3C6',
+            defaults: {
+                name:       { value: "" },
+                region:     { value: "", required: true },
+                partregion: { value: "", required: true },
+                refresh:    { value: 0, validate: function(v){
+                        var n = Number(v); return !isNaN(n) && n >= 0;
+                    }}
+            },
+            inputs: 1,
+            outputs: 1,
+            icon: "font-awesome/fa-leaf",
+            label: function() { return this.name || "DWD Pollen"; },
+
+            oneditprepare: function () {
+                const $regionSel     = $("#node-input-region");
+                const $partregionSel = $("#node-input-partregion");
+
+                const currentRegion     = this.region || "";
+                const currentPartregion = this.partregion || "";
+
+                function populateRegions(regions) {
+                    $regionSel.empty();
+                    $regionSel.append($("<option/>",{value:"", text:"– bitte wählen –"}));
+                    regions.forEach(r => {
+                        $regionSel.append($("<option/>",{ value: r.id, text: `${r.id} – ${r.name}` }));
+                    });
+                    if (currentRegion) { $regionSel.val(String(currentRegion)); }
+                    populatePartregions(regions, $regionSel.val());
+                }
+
+                function populatePartregions(regions, regionId) {
+                    $partregionSel.empty();
+                    if (!regionId) {
+                        $partregionSel.append($("<option/>",{value:"", text:"– bitte Region wählen –"}));
+                        return;
+                    }
+                    const r = regions.find(x => String(x.id) === String(regionId));
+                    if (!r) {
+                        $partregionSel.append($("<option/>",{value:"", text:"– keine Teilregionen –"}));
+                        return;
+                    }
+                    $partregionSel.append($("<option/>",{value:"", text:"– bitte wählen –"}));
+                    r.parts.forEach(p => {
+                        $partregionSel.append($("<option/>",{ value: p.id, text: `${p.id} – ${p.name}` }));
+                    });
+                    if (currentPartregion) { $partregionSel.val(String(currentPartregion)); }
+                }
+
+                // Regions abrufen über Admin-Proxy
+                $.getJSON("dwd-pollen/regions")
+                    .done(function(resp){
+                        if (resp && Array.isArray(resp.regions)) {
+                            populateRegions(resp.regions);
+                        } else {
+                            $regionSel.empty().append($("<option/>",{value:"", text:"Fehler beim Laden"}));
+                        }
+                    })
+                    .fail(function(){
+                        $regionSel.empty().append($("<option/>",{value:"", text:"Laden fehlgeschlagen"}));
+                    });
+
+                // Abhängige Teilregionen
+                $regionSel.on("change", function(){
+                    const regionId = $(this).val();
+                    $.getJSON("dwd-pollen/regions").done(function(resp){
+                        populatePartregions(resp.regions, regionId);
+                    });
+                });
+            }
+        });
+    })();
 </script>

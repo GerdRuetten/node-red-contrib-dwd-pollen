@@ -1,175 +1,136 @@
-module.exports = function (RED) {
-    const axios = require('axios');
-    const moment = require('moment-timezone');
+module.exports = function(RED) {
+    const axios = require("axios");
 
-    const S31_URL = 'https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json';
+    // --- Admin-Proxy für Editor (CORS-frei) -----------------------------------
+    // Cache die Region/Teilregion-Struktur für 30 Minuten
+    let cachedRegions = null;
+    let cachedAt = 0;
+    const CACHE_MS = 30 * 60 * 1000;
 
-    // Mapping laut DWD-Doku (s31fg.pdf): 0=keine, 1=gering, 2=mäßig, 3=hoch; -1/undefined = keine Angabe
-    const LEVEL_TEXT = {
-        '-1': 'k. A.',
-        '0': 'keine',
-        '1': 'gering',
-        '2': 'mäßig',
-        '3': 'hoch'
-    };
-
-    const POLLEN_FIELDS = [
-        'Hasel','Erle','Esche','Birke','Graeser','Roggen','Beifuss','Ambrosia'
-    ];
-
-    function matchByNames(entry, cfg) {
-        const rn = (entry.region_name || '').toLowerCase();
-        const prn = (entry.partregion_name || '').toLowerCase();
-
-        const wantR = (cfg.regionName || '').trim().toLowerCase();
-        const wantPR = (cfg.partRegionName || '').trim().toLowerCase();
-
-        if (wantR && !rn.includes(wantR)) return false;
-        if (wantPR && !prn.includes(wantPR)) return false;
-
-        if (!wantR && !wantPR) return false; // nichts konfiguriert
-
-        // zusätzliche Namen (Komma-getrennt) – ein Treffer reicht
-        const extra = (cfg.extraNames || '')
-            .split(',')
-            .map(s => s.trim().toLowerCase())
-            .filter(Boolean);
-
-        if (extra.length) {
-            const hay = `${rn} ${prn}`;
-            const hit = extra.some(x => hay.includes(x));
-            if (!hit) return false;
+    async function fetchRegions() {
+        const now = Date.now();
+        if (cachedRegions && (now - cachedAt) < CACHE_MS) {
+            return cachedRegions;
         }
+        const url = "https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json";
+        const { data } = await axios.get(url, { timeout: 15000 });
 
-        return true;
-    }
-
-    async function fetchS31() {
-        const res = await axios.get(S31_URL, { timeout: 15000, responseType: 'json' });
-        if (res.status !== 200 || !res.data) {
-            throw new Error(`HTTP ${res.status} beim Abruf von s31fg.json`);
-        }
-        return res.data;
-    }
-
-    function pickRegion(data, cfg) {
-        if (!data || !Array.isArray(data.content)) {
-            throw new Error('Ungültiges DWD-Format: content[] fehlt');
-        }
-
-        // 1) Direkter Treffer über partRegionId
-        const wantId = (cfg.partRegionId || '').toString().trim();
-        if (wantId) {
-            const byId = data.content.find(c => String(c.partregion_id) === wantId);
-            if (byId) return byId;
-        }
-
-        // 2) Name-Fallback
-        if (cfg.allowNameFallback) {
-            const byName = data.content.find(c => matchByNames(c, cfg));
-            if (byName) return byName;
-        }
-
-        return null;
-    }
-
-    function toText(v) {
-        const key = (v === null || v === undefined) ? '-1' : String(v);
-        return LEVEL_TEXT.hasOwnProperty(key) ? LEVEL_TEXT[key] : 'k. A.';
-    }
-
-    function normalize(entry, cfg) {
-        const out = {
-            region: {
-                id: entry.partregion_id,
-                region_name: entry.region_name,
-                partregion_name: entry.partregion_name
-            },
-            last_update: entry.last_update || null,
-            pollen: {}
-        };
-
-        const wantAll = cfg.dayMode === 'all';
-        POLLEN_FIELDS.forEach(p => {
-            const src = entry.Pollen && entry.Pollen[p];
-            if (!src) return;
-
-            const rec = {};
-            if (wantAll || cfg.dayMode === 'today') rec.today = src.today ?? null;
-            if (wantAll || cfg.dayMode === 'tomorrow') rec.tomorrow = src.tomorrow ?? null;
-            if (wantAll || cfg.dayMode === 'day_after_tomorrow') rec.day_after_tomorrow = src.day_after_tomorrow ?? null;
-
-            if (cfg.includeTextLevels) {
-                rec.text = {};
-                if ('today' in rec) rec.text.today = toText(rec.today);
-                if ('tomorrow' in rec) rec.text.tomorrow = toText(rec.tomorrow);
-                if ('day_after_tomorrow' in rec) rec.text.day_after_tomorrow = toText(rec.day_after_tomorrow);
+        const regions = [];
+        if (data && data.regions) {
+            for (const [rid, rObj] of Object.entries(data.regions)) {
+                const parts = [];
+                if (rObj.partregions) {
+                    for (const [pid, pObj] of Object.entries(rObj.partregions)) {
+                        parts.push({ id: String(pid), name: pObj.partregion_name || String(pid) });
+                    }
+                }
+                regions.push({ id: String(rid), name: rObj.region_name || String(rid), parts });
             }
-
-            out.pollen[p] = rec;
-        });
-
-        return out;
+        }
+        cachedRegions = regions;
+        cachedAt = now;
+        return regions;
     }
 
-    function setupAutoTimer(node, cfg, fire) {
-        if (node._timer) {
-            clearInterval(node._timer);
-            node._timer = null;
+    RED.httpAdmin.get("/dwd-pollen/regions", async (req, res) => {
+        try {
+            const regions = await fetchRegions();
+            res.json({ regions });
+        } catch (err) {
+            res.status(500).json({ error: "failed_to_load_regions", details: String(err && err.message || err) });
         }
-        const sec = Number(cfg.autoRefreshSec || 0);
-        if (sec > 0) {
-            node._timer = setInterval(() => fire(), sec * 1000);
-        }
-    }
+    });
 
+    // --- Runtime: Node-Definition ---------------------------------------------
     function DwdPollenNode(config) {
         RED.nodes.createNode(this, config);
         const node = this;
-        node.status({ fill: 'grey', shape: 'ring', text: 'idle' });
 
-        const runOnce = async (msgIn) => {
-            try {
-                node.status({ fill: 'blue', shape: 'dot', text: 'Abrufen…' });
-                const json = await fetchS31();
-                const picked = pickRegion(json, config);
+        node.name       = config.name || "";
+        node.region     = String(config.region || "");
+        node.partregion = String(config.partregion || "");
+        node.refresh    = Number(config.refresh || 0); // Sek.
 
-                if (!picked) {
-                    node.status({ fill: 'yellow', shape: 'ring', text: 'Region nicht gefunden' });
-                    node.send({
-                        payload: null,
-                        error: 'region_not_found',
-                        note: 'Bitte Partregion-ID setzen oder Name-Fallback/Bezeichnungen prüfen.',
-                        _meta: { source: 'DWD s31fg.json', url: S31_URL }
-                    });
-                    return;
-                }
-
-                const payload = normalize(picked, config);
-                node.status({ fill: 'green', shape: 'dot', text: (payload.region.partregion_name || payload.region.region_name) });
-                node.send({
-                    payload,
-                    _meta: { source: 'DWD s31fg.json', url: S31_URL, ts: moment().toISOString() }
-                });
-            } catch (err) {
-                node.status({ fill: 'red', shape: 'ring', text: 'Fehler' });
-                node.error(`[DWD-Pollen] ${err.message || err}`, msgIn);
-                node.send({ payload: null, error: 'fetch_failed', message: String(err), _meta: { url: S31_URL } });
-            }
-        };
-
-        node.on('input', (msg) => runOnce(msg));
-        setupAutoTimer(node, config, () => runOnce({}));
-
-        // initial fetch on deploy
-        if (config.fetchOnDeploy) {
-            setTimeout(() => runOnce({}), 500);
-        }
-
-        node.on('close', () => {
-            if (node._timer) clearInterval(node._timer);
+        let interval = null;
+        node.on("close", function(done){
+            if (interval) { clearInterval(interval); interval = null; }
+            done();
         });
+
+        node.on("input", async function(msg, send, done) {
+            try {
+                const result = await loadPollen(node.region, node.partregion);
+                send({ payload: result.payload, _meta: result._meta });
+                done();
+            } catch (err) {
+                node.error(`DWD-Pollen Fehler: ${err && err.message || err}`, msg);
+                done(err);
+            }
+        });
+
+        // Auto-Refresh
+        if (node.refresh > 0) {
+            interval = setInterval(async () => {
+                try {
+                    const result = await loadPollen(node.region, node.partregion);
+                    node.send({ payload: result.payload, _meta: result._meta });
+                } catch (e) {
+                    node.warn(`DWD-Pollen Auto-Refresh: ${e && e.message || e}`);
+                }
+            }, node.refresh * 1000);
+        }
     }
 
-    RED.nodes.registerType('dwd-pollen', DwdPollenNode);
+    async function loadPollen(regionId, partregionId) {
+        if (!regionId || !partregionId) {
+            throw new Error("Region & Teilregion sind Pflichtfelder");
+        }
+        const url = "https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json";
+        const { data } = await axios.get(url, { timeout: 15000 });
+
+        const region = data?.regions?.[regionId];
+        if (!region) throw new Error(`Region ${regionId} nicht gefunden`);
+        const part   = region.partregions?.[partregionId];
+        if (!part) throw new Error(`Teilregion ${partregionId} in Region ${regionId} nicht gefunden`);
+
+        // Struktur wie im DWD-Feed: Pollenarten mit Levels heute/heute+1/heute+2
+        // Werte sind 0..6 oder "-" / null
+        const pollen = part?.Pollen || {};
+        // Normiere auf array of { type, today, tomorrow, dayafter }
+        const payload = Object.keys(pollen).sort().map(key => {
+            const entry = pollen[key] || {};
+            return {
+                type: key,
+                today:     coerce(entry.today),
+                tomorrow:  coerce(entry.tomorrow),
+                dayafter:  coerce(entry.dayafter)
+            };
+        });
+
+        return {
+            payload,
+            _meta: {
+                source: url,
+                last_update: data?.last_update || null,
+                next_update: data?.next_update || null,
+                region: {
+                    id: regionId,
+                    name: region?.region_name || null
+                },
+                partregion: {
+                    id: partregionId,
+                    name: part?.partregion_name || null
+                }
+            }
+        };
+    }
+
+    function coerce(v) {
+        // DWD nutzt z.T. "-" für "keine Angabe"
+        if (v === "-" || v === undefined || v === null) return null;
+        const n = Number(v);
+        return isNaN(n) ? null : n;
+    }
+
+    RED.nodes.registerType("dwd-pollen", DwdPollenNode);
 };
