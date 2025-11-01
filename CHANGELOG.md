@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.2] - 2025-11-01
+### Fixed
+- Korrekte Anzeige des Auto-Refresh-Hinweises (eigene Zeile, sauberes Layout).
+
+### Added
+- Option „Beim Deploy sofort eine Anfrage senden“.
+- Region/Teilregion-Auswahl mit Link zur DWD-Seite.
+
 ## 1.0.1 — 2025-11-01
 ### Added
 - Editor-UI mit **Dropdowns für Region & Teilregion** (Daten dynamisch aus DWD-Feed, via Admin-Proxy).

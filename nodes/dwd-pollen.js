@@ -1,135 +1,151 @@
-module.exports = function(RED) {
+/**
+ * DWD Pollen Node
+ * Features:
+ *  - Admin-Endpoint /dwd-pollen/regions: liefert Region/Teilregionen (mit Cache)
+ *  - Optionen: fetchOnDeploy (sofort abrufen), autoRefreshSec (Intervall)
+ *  - msg.regionId / msg.partregionId überschreiben die Konfig
+ */
+module.exports = function (RED) {
     const axios = require("axios");
 
-    // --- Admin-Proxy für Editor (CORS-frei) -----------------------------------
-    // Cache die Region/Teilregion-Struktur für 30 Minuten
-    let cachedRegions = null;
-    let cachedAt = 0;
-    const CACHE_MS = 30 * 60 * 1000;
-
-    async function fetchRegions() {
-        const now = Date.now();
-        if (cachedRegions && (now - cachedAt) < CACHE_MS) {
-            return cachedRegions;
-        }
-        const url = "https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json";
-        const { data } = await axios.get(url, { timeout: 15000 });
-
-        const regions = [];
-        if (data && data.regions) {
-            for (const [rid, rObj] of Object.entries(data.regions)) {
-                const parts = [];
-                if (rObj.partregions) {
-                    for (const [pid, pObj] of Object.entries(rObj.partregions)) {
-                        parts.push({ id: String(pid), name: pObj.partregion_name || String(pid) });
-                    }
-                }
-                regions.push({ id: String(rid), name: rObj.region_name || String(rid), parts });
-            }
-        }
-        cachedRegions = regions;
-        cachedAt = now;
-        return regions;
-    }
+    // -------- Admin-Endpoint: Region/Teilregionen holen (mit Cache) ----------
+    let _regionsCache = { ts: 0, data: null };
+    const CACHE_MS = 6 * 60 * 60 * 1000; // 6h
 
     RED.httpAdmin.get("/dwd-pollen/regions", async (req, res) => {
         try {
-            const regions = await fetchRegions();
-            res.json({ regions });
+            const now = Date.now();
+            if (!_regionsCache.data || now - _regionsCache.ts > CACHE_MS) {
+                const url = "https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json";
+                const { data } = await axios.get(url, { timeout: 10000, responseType: "json" });
+
+                const byRegion = new Map();
+                const content = Array.isArray(data?.content) ? data.content : [];
+
+                for (const e of content) {
+                    const rid = e.region_id;
+                    const rname = e.region_name;
+                    const prid = e.partregion_id;
+                    const prname = e.partregion_name;
+
+                    if (!rid || !rname) continue;
+
+                    if (!byRegion.has(rid)) {
+                        byRegion.set(rid, { id: String(rid), name: String(rname), parts: [] });
+                    }
+                    if (prid && prname) {
+                        byRegion.get(rid).parts.push({ id: String(prid), name: String(prname) });
+                    }
+                }
+
+                const regions = Array.from(byRegion.values())
+                    .map(r => ({ ...r, parts: r.parts.sort((a, b) => a.name.localeCompare(b.name, "de")) }))
+                    .sort((a, b) => a.name.localeCompare(b.name, "de"));
+
+                _regionsCache = { ts: now, data: { regions } };
+            }
+
+            res.json(_regionsCache.data);
         } catch (err) {
-            res.status(500).json({ error: "failed_to_load_regions", details: String(err && err.message || err) });
+            RED.log.warn(`[dwd-pollen] /dwd-pollen/regions failed: ${err.message}`);
+            res.status(500).json({ error: "fetch_failed", message: err.message });
         }
     });
 
-    // --- Runtime: Node-Definition ---------------------------------------------
+    // --------------------------- Runtime-Node -------------------------------
     function DwdPollenNode(config) {
         RED.nodes.createNode(this, config);
         const node = this;
 
-        node.name       = config.name || "";
-        node.region     = String(config.region || "");
-        node.partregion = String(config.partregion || "");
-        node.refresh    = Number(config.refresh || 0); // Sek.
+        node.name = config.name || "";
+        node.regionId = config.regionId || "";
+        node.partregionId = config.partregionId || "";
+        node.regionName = config.regionName || "";
+        node.partregionName = config.partregionName || "";
+        node.fetchOnDeploy = !!config.fetchOnDeploy;
+        node.autoRefreshSec = Number(config.autoRefreshSec || 0);
 
-        let interval = null;
-        node.on("close", function(done){
-            if (interval) { clearInterval(interval); interval = null; }
-            done();
-        });
+        let timer = null;
 
-        node.on("input", async function(msg, send, done) {
+        async function fetchDataAndSend(trigger) {
             try {
-                const result = await loadPollen(node.region, node.partregion);
-                send({ payload: result.payload, _meta: result._meta });
-                done();
+                const regionId = (trigger && trigger.regionId) || node.regionId;
+                const partId = (trigger && trigger.partregionId) || node.partregionId;
+
+                if (!regionId && !partId) {
+                    throw new Error("Bitte Region oder Teilregion konfigurieren (regionId/partregionId).");
+                }
+
+                const url = "https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json";
+                const { data } = await axios.get(url, { timeout: 15000, responseType: "json" });
+                const all = Array.isArray(data?.content) ? data.content : [];
+
+                let filtered;
+                if (partId) {
+                    filtered = all.filter(e => String(e.partregion_id) === String(partId));
+                } else {
+                    filtered = all.filter(e => String(e.region_id) === String(regionId));
+                }
+
+                const msg = {
+                    payload: filtered,
+                    meta: {
+                        source: url,
+                        count: filtered.length,
+                        regionId: regionId || null,
+                        partregionId: partId || null,
+                        regionName: node.regionName || null,
+                        partregionName: node.partregionName || null,
+                        autoRefreshSec: node.autoRefreshSec || 0,
+                        fetchedAt: new Date().toISOString(),
+                        initialFetch: !!(trigger && trigger.initial)
+                    }
+                };
+
+                node.status({ fill: "green", shape: "dot", text: `OK (${msg.meta.count})` });
+                node.send(msg);
             } catch (err) {
-                node.error(`DWD-Pollen Fehler: ${err && err.message || err}`, msg);
-                done(err);
+                node.status({ fill: "red", shape: "ring", text: err.message });
+                node.warn(`[dwd-pollen] error: ${err.message}`);
             }
+        }
+
+        function startTimerIfNeeded() {
+            stopTimer();
+            if (node.autoRefreshSec && node.autoRefreshSec > 0) {
+                timer = setInterval(() => fetchDataAndSend({}), node.autoRefreshSec * 1000);
+                // kleine visuelle Rückmeldung
+                node.status({ fill: "blue", shape: "ring", text: `Auto-Refresh ${node.autoRefreshSec}s` });
+            }
+        }
+
+        function stopTimer() {
+            if (timer) {
+                clearInterval(timer);
+                timer = null;
+            }
+        }
+
+        // Input → sofort abrufen (msg.regionId/partregionId überschreiben optional)
+        node.on("input", async (msg, send, done) => {
+            await fetchDataAndSend({
+                regionId: msg.regionId,
+                partregionId: msg.partregionId
+            });
+            if (done) done();
         });
 
-        // Auto-Refresh
-        if (node.refresh > 0) {
-            interval = setInterval(async () => {
-                try {
-                    const result = await loadPollen(node.region, node.partregion);
-                    node.send({ payload: result.payload, _meta: result._meta });
-                } catch (e) {
-                    node.warn(`DWD-Pollen Auto-Refresh: ${e && e.message || e}`);
-                }
-            }, node.refresh * 1000);
-        }
-    }
-
-    async function loadPollen(regionId, partregionId) {
-        if (!regionId || !partregionId) {
-            throw new Error("Region & Teilregion sind Pflichtfelder");
-        }
-        const url = "https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json";
-        const { data } = await axios.get(url, { timeout: 15000 });
-
-        const region = data?.regions?.[regionId];
-        if (!region) throw new Error(`Region ${regionId} nicht gefunden`);
-        const part   = region.partregions?.[partregionId];
-        if (!part) throw new Error(`Teilregion ${partregionId} in Region ${regionId} nicht gefunden`);
-
-        // Struktur wie im DWD-Feed: Pollenarten mit Levels heute/heute+1/heute+2
-        // Werte sind 0..6 oder "-" / null
-        const pollen = part?.Pollen || {};
-        // Normiere auf array of { type, today, tomorrow, dayafter }
-        const payload = Object.keys(pollen).sort().map(key => {
-            const entry = pollen[key] || {};
-            return {
-                type: key,
-                today:     coerce(entry.today),
-                tomorrow:  coerce(entry.tomorrow),
-                dayafter:  coerce(entry.dayafter)
-            };
-        });
-
-        return {
-            payload,
-            _meta: {
-                source: url,
-                last_update: data?.last_update || null,
-                next_update: data?.next_update || null,
-                region: {
-                    id: regionId,
-                    name: region?.region_name || null
-                },
-                partregion: {
-                    id: partregionId,
-                    name: part?.partregion_name || null
-                }
+        // Beim Deploy: optional initialer Abruf + Timer starten
+        (async () => {
+            if (node.fetchOnDeploy) {
+                await fetchDataAndSend({ initial: true });
             }
-        };
-    }
+            startTimerIfNeeded();
+        })().catch(err => node.warn(`[dwd-pollen] init error: ${err.message}`));
 
-    function coerce(v) {
-        // DWD nutzt z.T. "-" für "keine Angabe"
-        if (v === "-" || v === undefined || v === null) return null;
-        const n = Number(v);
-        return isNaN(n) ? null : n;
+        node.on("close", () => {
+            stopTimer();
+        });
     }
 
     RED.nodes.registerType("dwd-pollen", DwdPollenNode);
