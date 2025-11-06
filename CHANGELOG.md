@@ -1,20 +1,24 @@
 # Changelog
 
+## [1.0.3] - 2025-11-06
+### Docs
+- Unified README style and structure with other DWD modules for consistent documentation.
+
 ## [1.0.2] - 2025-11-01
 ### Fixed
-- Korrekte Anzeige des Auto-Refresh-Hinweises (eigene Zeile, sauberes Layout).
+- Correct display of the auto-refresh note (separate line, clean layout).
 
 ### Added
-- Option „Beim Deploy sofort eine Anfrage senden“.
-- Region/Teilregion-Auswahl mit Link zur DWD-Seite.
+- Option "Send a request immediately on deploy".
+- Region/subregion selection with link to the DWD page.
 
 ## 1.0.1 — 2025-11-01
 ### Added
-- Editor-UI mit **Dropdowns für Region & Teilregion** (Daten dynamisch aus DWD-Feed, via Admin-Proxy).
-- **Auto-Refresh** (Sekunden) als optionales Feld.
+- Editor UI with **dropdowns for region & subregion** (data dynamically from DWD feed, via admin proxy).
+- **Auto-refresh** (seconds) as an optional field.
 
 ### Docs
-- README ergänzt (Feldbeschreibung, Link zur DWD-Gebietsseite).
+- README extended (field description, link to the DWD area page).
 
 ## [1.0.0] - 2025-10-31
 ### Added
