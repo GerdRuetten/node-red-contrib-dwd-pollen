@@ -1,0 +1,43 @@
+{
+  "paletteLabel": "DWD Pollen",
+  "label": {
+    "defaultName": "DWD Pollen",
+    "name": "Name",
+    "region": "Region",
+    "partregion": "Teilregion",
+    "regionName": "Regionsname",
+    "partregionName": "Teilregionsname",
+    "fetchOnDeploy": "Beim Deploy abrufen",
+    "autoRefresh": "Auto-Refresh (Sek.)",
+    "staleAllow": "Stale erlauben"
+  },
+  "hint": {
+    "fetchOnDeploy": "Direkten Datenabruf beim Deploy aktivieren",
+    "staleAllow": "Bei Fehlern letzten erfolgreichen Stand aus Cache liefern"
+  },
+  "tips": {
+    "source": "Die Listen werden aus dem offiziellen DWD-Pollenfeed geladen. Alternativ können msg.regionId bzw. msg.partregionId gesetzt werden.",
+    "autoRefresh": "Intervall für automatische Abrufe in Sekunden. 0 = deaktiviert.",
+    "staleAllow": "Wenn deaktiviert, bricht der Node bei einem Abruffehler mit Fehler ab."
+  },
+  "ui": {
+    "choose": "— Bitte wählen —",
+    "chooseRegion": "— Bitte Region wählen —",
+    "loadRegionsFailed": "Laden der Regionen fehlgeschlagen"
+  },
+  "help": {
+    "title": "DWD Pollen3",
+    "desc": "Ruft Pollenbelastungsinformationen vom Deutschen Wetterdienst (DWD) ab.",
+    "flow1": "Zuerst eine Region auswählen, danach eine verfügbare Teilregion.",
+    "flow2": "Optional „Beim Deploy abrufen“ aktivieren und ein Auto-Refresh-Intervall (Sekunden) setzen.",
+    "flow3": "Zur Laufzeit können msg.regionId/msg.partregionId die Konfiguration überschreiben."
+  },
+  "runtime": {
+    "statusOk": "OK ({count})",
+    "statusStale": "stale ({count})",
+    "statusAutoRefresh": "Auto-Refresh {seconds}s",
+    "errorMissingRegionOrPart": "Bitte Region oder Teilregion konfigurieren (regionId/partregionId).",
+    "errorInit": "Initialisierungsfehler: {error}",
+    "errorFetchFailed": "Abruf fehlgeschlagen: {error}"
+  }
+}

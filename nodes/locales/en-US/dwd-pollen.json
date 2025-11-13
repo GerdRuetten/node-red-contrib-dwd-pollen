@@ -1,0 +1,43 @@
+{
+  "paletteLabel": "DWD Pollen",
+  "label": {
+    "defaultName": "DWD Pollen",
+    "name": "Name",
+    "region": "Region",
+    "partregion": "Subregion",
+    "regionName": "Region name",
+    "partregionName": "Subregion name",
+    "fetchOnDeploy": "Fetch on deploy",
+    "autoRefresh": "Auto-refresh (sec)",
+    "staleAllow": "Allow stale"
+  },
+  "hint": {
+    "fetchOnDeploy": "Trigger a request immediately on deploy",
+    "staleAllow": "On fetch error, return last successful cached data"
+  },
+  "tips": {
+    "source": "Lists are loaded from the official DWD pollen feed. Alternatively you can set msg.regionId or msg.partregionId.",
+    "autoRefresh": "Polling interval in seconds. 0 = disabled.",
+    "staleAllow": "If disabled, the node will error out when a request fails."
+  },
+  "ui": {
+    "choose": "— Please choose —",
+    "chooseRegion": "— Please choose a region —",
+    "loadRegionsFailed": "Loading regions failed"
+  },
+  "help": {
+    "title": "DWD Pollen1",
+    "desc": "Retrieves pollen risk information from Deutscher Wetterdienst (DWD).",
+    "flow1": "Select Region, then choose available Subregions.",
+    "flow2": "Optionally enable \"Fetch on deploy\" and set \"Auto-refresh\" (seconds).",
+    "flow3": "At runtime, msg.regionId/msg.partregionId can override the configuration."
+  },
+  "runtime": {
+    "statusOk": "OK ({count})",
+    "statusStale": "stale ({count})",
+    "statusAutoRefresh": "Auto-Refresh {seconds}s",
+    "errorMissingRegionOrPart": "Please configure a region or partregion (regionId/partregionId).",
+    "errorInit": "Initialisation error: {error}",
+    "errorFetchFailed": "Fetch failed: {error}"
+  }
+}

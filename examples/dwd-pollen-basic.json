@@ -1,40 +1,79 @@
 [
   {
-    "id": "a1b2c3d4e5f6",
-    "type": "tab",
-    "label": "DWD Pollen Example",
-    "disabled": false,
-    "info": "Beispiel-Flow für node-red-contrib-dwd-pollen"
+    "id":"fb13b9cb3a2b49be",
+    "type":"dwd-pollen",
+    "z":"9b8a26582f09a98b",
+    "name":"",
+    "regionId":"40",
+    "partregionId":"41",
+    "regionName":"Nordrhein-Westfalen",
+    "partregionName":"",
+    "fetchOnDeploy":true,
+    "autoRefreshSec":"3600",
+    "x":250,
+    "y":120,
+    "wires":[
+      [
+        "6d04249e285bc20b"
+      ]
+    ]
   },
   {
-    "id": "n1dwd",
-    "type": "dwd-pollen",
-    "z": "a1b2c3d4e5f6",
-    "name": "DWD Pollen (Niederrhein)",
-    "regionId": "101",
-    "allowNameFallback": true,
-    "additionalNames": "Niederrhein",
-    "dayFilter": "today",
-    "fetchOnDeploy": true,
-    "autoRefresh": 3600,
-    "includeTextLevels": true,
-    "x": 280,
-    "y": 140,
-    "wires": [["debug1"]]
+    "id":"6d04249e285bc20b",
+    "type":"debug",
+    "z":"9b8a26582f09a98b",
+    "name":"debug 1",
+    "active":true,
+    "tosidebar":true,
+    "console":false,
+    "tostatus":false,
+    "complete":"true",
+    "targetType":"full",
+    "statusVal":"",
+    "statusType":"auto",
+    "x":500,
+    "y":120,
+    "wires":[
+
+    ]
   },
   {
-    "id": "debug1",
-    "type": "debug",
-    "z": "a1b2c3d4e5f6",
-    "name": "Pollen Data",
-    "active": true,
-    "tosidebar": true,
-    "console": false,
-    "tostatus": false,
-    "complete": "payload",
-    "targetType": "msg",
-    "x": 510,
-    "y": 140,
-    "wires": []
+    "id":"8794b4f80223853a",
+    "type":"inject",
+    "z":"9b8a26582f09a98b",
+    "name":"",
+    "props":[
+      {
+        "p":"payload"
+      },
+      {
+        "p":"topic",
+        "vt":"str"
+      }
+    ],
+    "repeat":"",
+    "crontab":"",
+    "once":false,
+    "onceDelay":0.1,
+    "topic":"",
+    "payload":"",
+    "payloadType":"date",
+    "x":100,
+    "y":120,
+    "wires":[
+      [
+        "fb13b9cb3a2b49be"
+      ]
+    ]
+  },
+  {
+    "id":"7cbd752df1d14dab",
+    "type":"global-config",
+    "env":[
+
+    ],
+    "modules":{
+      "node-red-contrib-dwd-pollen":"1.0.3"
+    }
   }
 ]

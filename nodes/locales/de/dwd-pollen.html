@@ -1,0 +1,117 @@
+<script type="text/html" data-help-name="dwd-pollen">
+    <p>
+        <b>DWD Pollen</b> – ruft Pollenbelastungs-Informationen des Deutschen Wetterdienstes (DWD)
+        für eine ausgewählte Region und Teilregion ab.
+    </p>
+
+    <h3>Konfiguration</h3>
+    <dl>
+        <dt>Name</dt>
+        <dd>
+            Optionaler Anzeigename des Nodes im Flow.
+        </dd>
+
+        <dt>Region / Teilregion</dt>
+        <dd>
+            Wähle eine Region und eine Teilregion aus dem DWD-Katalog.
+            Die Listen werden aus dem offiziellen DWD JSON-Feed geladen.
+        </dd>
+
+        <dt>Regionsname / Teilregionsname</dt>
+        <dd>
+            Diese Felder werden beim Auswählen automatisch gesetzt.
+            Du kannst sie aber manuell überschreiben, wenn du eigene Bezeichnungen verwenden möchtest.
+        </dd>
+
+        <dt>Beim Deploy abrufen</dt>
+        <dd>
+            Wenn aktiviert, ruft der Node direkt nach einem Deploy einmalig Daten ab.
+        </dd>
+
+        <dt>Auto-Aktualisierung (Sek.)</dt>
+        <dd>
+            Optionales Intervall in Sekunden für automatische Abrufe.
+            <code>0</code> bedeutet: keine automatische Aktualisierung.
+        </dd>
+
+        <dt>Veraltete Daten erlauben</dt>
+        <dd>
+            Wenn aktiviert, verwendet der Node bei Fehlern (z. B. HTTP-/Netzwerkfehler)
+            die zuletzt erfolgreich abgerufenen Daten als Fallback.
+            Die Nachricht wird dann im Metadatenobjekt als <code>stale</code> markiert.
+        </dd>
+    </dl>
+
+    <h3>Eingänge</h3>
+    <p>
+        Jede eingehende Nachricht auf <code>msg</code> löst einen Abruf aus.
+        Folgende Properties können die Node-Konfiguration überschreiben:
+    </p>
+
+    <dl>
+        <dt>msg.regionId</dt>
+        <dd>
+            Optionale Regions-ID. Wenn gesetzt, überschreibt sie die konfigurierte Region.
+        </dd>
+
+        <dt>msg.partregionId</dt>
+        <dd>
+            Optionale Teilregions-ID. Wenn gesetzt, überschreibt sie die konfigurierte Teilregion.
+        </dd>
+
+        <dt>msg.staleAllow</dt>
+        <dd>
+            Optionales Boolean-Flag, das die Option <b>Veraltete Daten erlauben</b>
+            für genau diese Nachricht überschreibt.
+        </dd>
+    </dl>
+
+    <h3>Ausgänge</h3>
+    <p>
+        Der Node sendet eine Nachricht mit folgendem Aufbau:
+    </p>
+
+    <dl>
+        <dt>msg.payload</dt>
+        <dd>
+            Array von Pollen-Einträgen für die gewählte Region/Teilregion,
+            wie vom DWD bereitgestellt. Für jede Pollenart werden die numerischen
+            Belastungswerte (0–3 bzw. Wertebereiche wie <code>1-2</code>)
+            um zusätzliche Beschreibungsfelder ergänzt:
+            <ul>
+                <li><code>today_desc</code></li>
+                <li><code>tomorrow_desc</code></li>
+                <li><code>dayafter_to_desc</code></li>
+            </ul>
+        </dd>
+
+        <dt>msg._meta / msg.meta</dt>
+        <dd>
+            Metadaten zum Abruf, u. a.:
+            <ul>
+                <li><code>source</code> – URL des DWD-Feeds</li>
+                <li><code>count</code> – Anzahl der zurückgegebenen Einträge</li>
+                <li><code>regionId</code>, <code>partregionId</code></li>
+                <li><code>regionName</code>, <code>partregionName</code></li>
+                <li><code>autoRefreshSec</code></li>
+                <li><code>fetchedAt</code> – Zeitpunkt des Abrufs (ISO-String)</li>
+                <li><code>stale</code> – <code>true</code>, wenn ein Fallback verwendet wurde</li>
+            </ul>
+        </dd>
+    </dl>
+
+    <h3>Stale-Fallback</h3>
+    <p>
+        Schlägt der Live-Abruf fehl und ist das Verwenden veralteter Daten erlaubt
+        (über Konfiguration oder <code>msg.staleAllow</code>), sendet der Node
+        den zuletzt erfolgreichen Datensatz erneut und markiert die Metadaten mit
+        <code>stale: true</code>. So kannst du im Flow zwischen frischen und
+        gecachten Daten unterscheiden.
+    </p>
+
+    <h3>Quelle</h3>
+    <p>
+        Die Daten werden von folgender URL geladen:<br/>
+        <code>https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json</code>
+    </p>
+</script>

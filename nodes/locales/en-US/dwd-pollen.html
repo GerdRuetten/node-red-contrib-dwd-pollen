@@ -1,0 +1,111 @@
+<script type="text/html" data-help-name="dwd-pollen">
+    <p>
+        <b>DWD Pollen</b> — retrieves pollen risk information from Deutscher Wetterdienst (DWD)
+        for a selected region and subregion.
+    </p>
+
+    <h3>Configuration</h3>
+    <dl>
+        <dt>Name</dt>
+        <dd>Optional label for the node shown in the flow.</dd>
+
+        <dt>Region / Subregion</dt>
+        <dd>
+            Select a region and a subregion from the DWD catalogue.
+            The lists are fetched from the official DWD JSON feed.
+        </dd>
+
+        <dt>Region name / Subregion name</dt>
+        <dd>
+            These fields are filled automatically when you pick a region/subregion.
+            You can override them manually if you want custom display names.
+        </dd>
+
+        <dt>Fetch on deploy</dt>
+        <dd>
+            When enabled, the node will immediately fetch pollen data once after a deploy.
+        </dd>
+
+        <dt>Auto-refresh (sec)</dt>
+        <dd>
+            Optional interval in seconds for automatic refresh. Use <code>0</code> to disable.
+        </dd>
+
+        <dt>Allow stale</dt>
+        <dd>
+            If enabled, the node uses the last successfully fetched data when the live request
+            fails (for example due to a network error). The message is then marked as <code>stale</code>
+            in the metadata.
+        </dd>
+    </dl>
+
+    <h3>Inputs</h3>
+    <p>
+        A trigger message on <code>msg</code> starts a fetch. The following properties can override
+        the node configuration:
+    </p>
+
+    <dl>
+        <dt>msg.regionId</dt>
+        <dd>
+            Optional region id to request. If set, it overrides the configured region.
+        </dd>
+
+        <dt>msg.partregionId</dt>
+        <dd>
+            Optional subregion id to request. If set, it overrides the configured subregion.
+        </dd>
+
+        <dt>msg.staleAllow</dt>
+        <dd>
+            Optional boolean that overrides the <b>Allow stale</b> setting for this single message.
+        </dd>
+    </dl>
+
+    <h3>Outputs</h3>
+    <p>
+        The node sends a single message with this structure:
+    </p>
+
+    <dl>
+        <dt>msg.payload</dt>
+        <dd>
+            Array of pollen entries for the chosen region/subregion, as provided by the DWD JSON.
+            For each pollen type, the numeric risk levels (0–3 or ranges like <code>1-2</code>)
+            are extended with additional description fields:
+            <ul>
+                <li><code>today_desc</code></li>
+                <li><code>tomorrow_desc</code></li>
+                <li><code>dayafter_to_desc</code></li>
+            </ul>
+        </dd>
+
+        <dt>msg._meta / msg.meta</dt>
+        <dd>
+            Metadata about the fetch, for example:
+            <ul>
+                <li><code>source</code> – URL of the DWD feed</li>
+                <li><code>count</code> – number of returned entries</li>
+                <li><code>regionId</code>, <code>partregionId</code></li>
+                <li><code>regionName</code>, <code>partregionName</code></li>
+                <li><code>autoRefreshSec</code></li>
+                <li><code>fetchedAt</code> – ISO timestamp</li>
+                <li><code>stale</code> – <code>true</code> if stale data was used</li>
+            </ul>
+        </dd>
+    </dl>
+
+    <h3>Stale fallback</h3>
+    <p>
+        If a live HTTP request fails and stale data is allowed (via configuration
+        or <code>msg.staleAllow</code>), the node resends the last successful payload
+        and marks the metadata with <code>stale: true</code>. This allows flows to
+        distinguish between fresh and cached data.
+    </p>
+
+    <h3>Source</h3>
+    <p>
+        Data is loaded from:
+        <code>https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json</code>
+    </p>
+</script>

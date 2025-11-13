@@ -2,11 +2,20 @@
  * DWD Pollen Node
  * Features:
  *  - Admin-Endpoint /dwd-pollen/regions: liefert Region/Teilregionen (mit Cache)
- *  - Optionen: fetchOnDeploy (sofort abrufen), autoRefreshSec (Intervall)
+ *  - Optionen: fetchOnDeploy (sofort abrufen), autoRefreshSec (Intervall), staleAllow (Fallback auf letzte erfolgreiche Daten)
  *  - msg.regionId / msg.partregionId überschreiben die Konfig
+ *  - NEU: pro Pollenart today_desc / tomorrow_desc / dayafter_to_desc
+ *  - NEU: Stale-Fallback inkl. _meta.stale
  */
 module.exports = function (RED) {
     const axios = require("axios");
+
+    const NS = "node-red-contrib-dwd-pollen/dwd-pollen";
+
+    function t(key, opts) {
+        // Allgemeine Übersetzungsfunktion für diesen Node
+        return RED._(`${NS}:${key}`, opts);
+    }
 
     // -------- Admin-Endpoint: Region/Teilregionen holen (mit Cache) ----------
     let _regionsCache = { ts: 0, data: null };
@@ -39,7 +48,10 @@ module.exports = function (RED) {
                 }
 
                 const regions = Array.from(byRegion.values())
-                    .map(r => ({ ...r, parts: r.parts.sort((a, b) => a.name.localeCompare(b.name, "de")) }))
+                    .map(r => ({
+                        ...r,
+                        parts: r.parts.sort((a, b) => a.name.localeCompare(b.name, "de"))
+                    }))
                     .sort((a, b) => a.name.localeCompare(b.name, "de"));
 
                 _regionsCache = { ts: now, data: { regions } };
@@ -51,6 +63,23 @@ module.exports = function (RED) {
             res.status(500).json({ error: "fetch_failed", message: err.message });
         }
     });
+
+    // ---------- Hilfsfunktion: Wert -> Beschreibung (0..3 / "0-1" / "1-2" / "2-3") ----------
+    // Hinweis: aktuell nicht i18n-isiert, Texte sind Deutsch.
+    function describeLevel(raw) {
+        if (raw === null || raw === undefined) return null;
+        const key = String(raw).trim();
+        switch (key) {
+            case "0":   return "keine Belastung";
+            case "0-1": return "keine bis geringe Belastung";
+            case "1":   return "geringe Belastung";
+            case "1-2": return "geringe bis mittlere Belastung";
+            case "2":   return "mittlere Belastung";
+            case "2-3": return "mittlere bis hohe Belastung";
+            case "3":   return "hohe Belastung";
+            default:    return "unbekannt";
+        }
+    }
 
     // --------------------------- Runtime-Node -------------------------------
     function DwdPollenNode(config) {
@@ -64,19 +93,35 @@ module.exports = function (RED) {
         node.partregionName = config.partregionName || "";
         node.fetchOnDeploy = !!config.fetchOnDeploy;
         node.autoRefreshSec = Number(config.autoRefreshSec || 0);
+        node.staleAllow = !!config.staleAllow;
 
         let timer = null;
 
+        // Letzte erfolgreiche Antwort für Stale-Fallback
+        let lastGood = null; // { payload, _meta }
+
         async function fetchDataAndSend(trigger) {
+            const url = "https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json";
             try {
                 const regionId = (trigger && trigger.regionId) || node.regionId;
                 const partId = (trigger && trigger.partregionId) || node.partregionId;
 
+                // Effektiv genutztes staleAllow (msg > node)
+                const usedStaleAllow =
+                    typeof (trigger && trigger.staleAllow) === "boolean"
+                        ? !!trigger.staleAllow
+                        : typeof trigger?.msgStaleAllow === "boolean"
+                            ? !!trigger.msgStaleAllow
+                            : typeof trigger?.staleAllow === "boolean"
+                                ? !!trigger.staleAllow
+                                : typeof trigger?.msg?.staleAllow === "boolean"
+                                    ? !!trigger.msg.staleAllow
+                                    : !!node.staleAllow;
+
                 if (!regionId && !partId) {
-                    throw new Error("Bitte Region oder Teilregion konfigurieren (regionId/partregionId).");
+                    throw new Error(t("runtime.errorMissingRegionOrPart"));
                 }
 
-                const url = "https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json";
                 const { data } = await axios.get(url, { timeout: 15000, responseType: "json" });
                 const all = Array.isArray(data?.content) ? data.content : [];
 
@@ -87,26 +132,89 @@ module.exports = function (RED) {
                     filtered = all.filter(e => String(e.region_id) === String(regionId));
                 }
 
-                const msg = {
-                    payload: filtered,
-                    meta: {
-                        source: url,
-                        count: filtered.length,
-                        regionId: regionId || null,
-                        partregionId: partId || null,
-                        regionName: node.regionName || null,
-                        partregionName: node.partregionName || null,
-                        autoRefreshSec: node.autoRefreshSec || 0,
-                        fetchedAt: new Date().toISOString(),
-                        initialFetch: !!(trigger && trigger.initial)
+                // --- Beschreibungen pro Pollenart ergänzen ---
+                const enriched = filtered.map(e => {
+                    const out = { ...e };
+                    if (out.Pollen && typeof out.Pollen === "object") {
+                        for (const [pollenName, val] of Object.entries(out.Pollen)) {
+                            if (val && typeof val === "object") {
+                                out.Pollen[pollenName] = {
+                                    ...val,
+                                    today_desc: describeLevel(val.today),
+                                    tomorrow_desc: describeLevel(val.tomorrow),
+                                    dayafter_to_desc: describeLevel(val.dayafter_to)
+                                };
+                            }
+                        }
                     }
+                    return out;
+                });
+
+                const _meta = {
+                    source: url,
+                    count: enriched.length,
+                    regionId: regionId || null,
+                    partregionId: partId || null,
+                    regionName: node.regionName || null,
+                    partregionName: node.partregionName || null,
+                    autoRefreshSec: node.autoRefreshSec || 0,
+                    fetchedAt: new Date().toISOString(),
+                    initialFetch: !!(trigger && trigger.initial),
+                    stale: false,                  // frisch
+                    staleAllow: !!usedStaleAllow   // was effektiv genutzt wurde
                 };
 
-                node.status({ fill: "green", shape: "dot", text: `OK (${msg.meta.count})` });
+                // Letzten Erfolg merken
+                lastGood = { payload: enriched, _meta };
+
+                // Für Abwärtskompatibilität meta ≡ _meta beilegen
+                const msg = { payload: enriched, _meta, meta: _meta };
+
+                node.status({
+                    fill: "green",
+                    shape: "dot",
+                    text: t("runtime.statusOk", { count: _meta.count })
+                });
                 node.send(msg);
             } catch (err) {
-                node.status({ fill: "red", shape: "ring", text: err.message });
-                node.warn(`[dwd-pollen] error: ${err.message}`);
+                // Fallback auf letzte erfolgreiche Daten
+                const usedStaleAllow =
+                    typeof (trigger && trigger.staleAllow) === "boolean"
+                        ? !!trigger.staleAllow
+                        : typeof trigger?.msgStaleAllow === "boolean"
+                            ? !!trigger.msgStaleAllow
+                            : typeof trigger?.staleAllow === "boolean"
+                                ? !!trigger.staleAllow
+                                : typeof trigger?.msg?.staleAllow === "boolean"
+                                    ? !!trigger.msg.staleAllow
+                                    : !!node.staleAllow;
+
+                if (usedStaleAllow && lastGood) {
+                    const staleMeta = {
+                        ...lastGood._meta,
+                        stale: true,
+                        staleAt: new Date().toISOString(),
+                        error: String(err.message || err)
+                    };
+                    const msg = { payload: lastGood.payload, _meta: staleMeta, meta: staleMeta };
+                    node.status({
+                        fill: "yellow",
+                        shape: "ring",
+                        text: t("runtime.statusStale", { count: staleMeta.count })
+                    });
+                    node.warn(
+                        `[dwd-pollen] fetch failed, sent stale data: ${err.message}`
+                    );
+                    node.send(msg);
+                    return;
+                }
+
+                node.status({
+                    fill: "red",
+                    shape: "ring",
+                    text: t("runtime.errorFetchFailed", { error: err.message })
+                });
+                node.error(`[dwd-pollen] error: ${err.message}`, err);
             }
         }
 
@@ -114,8 +222,11 @@ module.exports = function (RED) {
             stopTimer();
             if (node.autoRefreshSec && node.autoRefreshSec > 0) {
                 timer = setInterval(() => fetchDataAndSend({}), node.autoRefreshSec * 1000);
-                // kleine visuelle Rückmeldung
-                node.status({ fill: "blue", shape: "ring", text: `Auto-Refresh ${node.autoRefreshSec}s` });
+                node.status({
+                    fill: "blue",
+                    shape: "ring",
+                    text: t("runtime.statusAutoRefresh", { seconds: node.autoRefreshSec })
+                });
             }
         }
 
@@ -126,22 +237,29 @@ module.exports = function (RED) {
             }
         }
 
-        // Input → sofort abrufen (msg.regionId/partregionId überschreiben optional)
+        // Input → sofort abrufen (msg.regionId/partregionId/staleAllow überschreiben optional)
         node.on("input", async (msg, send, done) => {
             await fetchDataAndSend({
                 regionId: msg.regionId,
-                partregionId: msg.partregionId
+                partregionId: msg.partregionId,
+                msgStaleAllow: msg.staleAllow
             });
             if (done) done();
         });
 
         // Beim Deploy: optional initialer Abruf + Timer starten
         (async () => {
-            if (node.fetchOnDeploy) {
-                await fetchDataAndSend({ initial: true });
+            try {
+                if (node.fetchOnDeploy) {
+                    await fetchDataAndSend({ initial: true });
+                }
+                startTimerIfNeeded();
+            } catch (err) {
+                node.warn(
+                    t("runtime.errorInit", { error: err.message })
+                );
             }
-            startTimerIfNeeded();
-        })().catch(err => node.warn(`[dwd-pollen] init error: ${err.message}`));
+        })();
 
         node.on("close", () => {
             stopTimer();

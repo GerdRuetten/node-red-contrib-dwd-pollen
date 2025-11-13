@@ -1,106 +1,146 @@
 <script type="text/html" data-template-name="dwd-pollen">
     <div class="form-row">
-        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <label for="node-input-name" data-i18n="label.name">Name</label>
         <input type="text" id="node-input-name" placeholder="DWD Pollen" />
     </div>
 
     <div class="form-row">
-        <label for="node-input-regionId"><i class="fa fa-map"></i> Region</label>
+        <label for="node-input-regionId" data-i18n="label.region"><i class="fa fa-map"></i> Region</label>
         <select id="node-input-regionId" style="width: 100%;">
-            <option value="">— Bitte wählen —</option>
+            <option value="" data-i18n="ui.choose">— Please choose —</option>
         </select>
     </div>
 
     <div class="form-row">
-        <label for="node-input-partregionId"><i class="fa fa-map-pin"></i> Teilregion</label>
+        <label for="node-input-partregionId" data-i18n="label.partregion"><i class="fa fa-map-pin"></i> Subregion</label>
         <select id="node-input-partregionId" style="width: 100%;" disabled>
-            <option value="">— Bitte Region wählen —</option>
+            <option value="" data-i18n="ui.chooseRegion">— Please choose a region —</option>
         </select>
     </div>
 
     <div class="form-row">
-        <label for="node-input-regionName"><i class="fa fa-tag"></i> Region-Name</label>
-        <input type="text" id="node-input-regionName" placeholder="(optional, wird beim Auswählen gesetzt)">
+        <label for="node-input-regionName" data-i18n="label.regionName"><i class="fa fa-tag"></i> Region name</label>
+        <input type="text" id="node-input-regionName" placeholder="(optional, set when selecting)">
     </div>
 
     <div class="form-row">
-        <label for="node-input-partregionName"><i class="fa fa-tag"></i> Teilregion-Name</label>
-        <input type="text" id="node-input-partregionName" placeholder="(optional, wird beim Auswählen gesetzt)">
+        <label for="node-input-partregionName" data-i18n="label.partregionName"><i class="fa fa-tag"></i> Subregion name</label>
+        <input type="text" id="node-input-partregionName" placeholder="(optional, set when selecting)">
+    </div>
+
+    <div class="form-tips" style="margin-left: 10px;" data-i18n="tips.source">
+        Lists are loaded from the official DWD pollen feed.
+        Alternatively, set <code>msg.regionId</code> or <code>msg.partregionId</code>.
     </div>
 
     <hr/>
 
     <div class="form-row">
-        <label for="node-input-fetchOnDeploy"><i class="fa fa-bolt"></i> Bei Deploy abrufen</label>
-        <input type="checkbox" id="node-input-fetchOnDeploy" style="width:auto; margin-left:6px;">
-        <span class="form-tips">Beim Deploy sofort eine Anfrage an den DWD senden.</span>
+        <label for="node-input-fetchOnDeploy">
+            <i class="fa fa-bolt"></i>
+            <span data-i18n="label.fetchOnDeploy">Fetch on deploy</span>
+        </label>
+        <input type="checkbox" id="node-input-fetchOnDeploy" style="width:auto;">
+        <span style="margin-left:6px;" data-i18n="hint.fetchOnDeploy">Trigger an immediate fetch on deploy</span>
     </div>
 
     <div class="form-row">
         <label for="node-input-autoRefreshSec">
-            <i class="fa fa-refresh"></i> Auto-Refresh (Sek.)
+            <i class="fa fa-refresh"></i>
+            <span data-i18n="label.autoRefresh">Auto-refresh (sec)</span>
         </label>
-        <input type="number" id="node-input-autoRefreshSec" min="0" placeholder="0 = aus">
+        <input type="number" id="node-input-autoRefreshSec" min="0" step="1" placeholder="0 = off">
+        <div class="form-tips" data-i18n="tips.autoRefresh">
+            Interval for automatic fetches in seconds. 0 = disabled.
+        </div>
     </div>
 
-    <div class="form-tips">
-        Automatische Aktualisierung im Intervall. 0 oder leer = deaktiviert.
+    <div class="form-row">
+        <label for="node-input-staleAllow">
+            <i class="fa fa-hourglass-half"></i>
+            <span data-i18n="label.staleAllow">Allow stale</span>
+        </label>
+        <input type="checkbox" id="node-input-staleAllow" style="width:auto;">
+        <span style="margin-left:6px;" data-i18n="hint.staleAllow">Use cached data on HTTP/parse errors</span>
+        <div class="form-tips" data-i18n="tips.staleAllow">
+            Allow falling back to cached data if a live fetch fails.
+            If disabled, the node will error instead.
+        </div>
     </div>
-    <div class="form-tips">
-        Die Listen werden aus dem offiziellen DWD-Pollenfeed geladen.
-        Alternativ können <code>msg.regionId</code> bzw. <code>msg.partregionId</code> gesetzt werden.
-    </div>
-</script>
-
-<script type="text/html" data-help-name="dwd-pollen">
-    <p><b>DWD Pollen</b> – ruft die Pollenflug-Informationen des Deutschen Wetterdienstes (DWD) ab.</p>
-    <ul>
-        <li>Wähle <b>Region</b> → dann stehen passende <b>Teilregionen</b> zur Auswahl.</li>
-        <li>Optional: <i>Bei Deploy abrufen</i> und <i>Auto-Refresh</i> (Sekunden) konfigurieren.</li>
-        <li>Zur Laufzeit können <code>msg.regionId</code>/<code>msg.partregionId</code> die Konfiguration überschreiben.</li>
-    </ul>
-    <p>Quelle: <code>https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json</code></p>
 </script>
 
 <script type="text/javascript">
-    (function() {
+    (function () {
         RED.nodes.registerType('dwd-pollen', {
             category: 'weather',
             color: '#9ed2f6',
+            paletteLabel: RED._('node-red-contrib-dwd-pollen/dwd-pollen:paletteLabel'),
             defaults: {
-                name: { value: "" },
-                regionId: { value: "" },
-                partregionId: { value: "" },
-                regionName: { value: "" },
+                name:           { value: "" },
+                regionId:       { value: "" },
+                partregionId:   { value: "" },
+                regionName:     { value: "" },
                 partregionName: { value: "" },
-                fetchOnDeploy: { value: true },
-                autoRefreshSec: { value: 0, validate: function(v){ return (v === "" || !isNaN(v)) && v >= 0; } }
+                fetchOnDeploy:  { value: true },
+                autoRefreshSec: {
+                    value: 0,
+                    validate: function(v){
+                        return (v === "" || !isNaN(v)) && v >= 0;
+                    }
+                },
+                staleAllow:     { value: true }
             },
             inputs: 1,
             outputs: 1,
             icon: "font-awesome/fa-leaf",
-            label: function() {
-                return this.name || "DWD Pollen";
+            label: function () {
+                return this.name || this._("label.defaultName") || "DWD Pollen";
             },
-            oneditprepare: function() {
+            labelStyle: function () {
+                return this.name ? "node_label_italic" : "";
+            },
+            oneditprepare: function () {
+                const node  = this;
                 const $region = $("#node-input-regionId");
                 const $part   = $("#node-input-partregionId");
                 const $rName  = $("#node-input-regionName");
                 const $pName  = $("#node-input-partregionName");
 
+                function t(key, fallback) {
+                    const s = node._(key);
+                    return (s && s !== key) ? s : (fallback || key);
+                }
+
                 function setPartDisabled(disabled, msg) {
                     $part.prop("disabled", !!disabled);
                     $part.find("option").remove();
-                    const opt = $("<option/>").val("").text(msg || (disabled ? "— Bitte Region wählen —" : "— Bitte wählen —"));
+                    const opt = $("<option/>")
+                        .val("")
+                        .text(
+                            msg ||
+                            (disabled
+                                    ? t("ui.chooseRegion","— Please choose a region —")
+                                    : t("ui.choose","— Please choose —")
+                            )
+                        );
                     $part.append(opt);
                 }
 
                 function populateRegions(regions, preselectId) {
                     $region.find("option").remove();
-                    $region.append($("<option/>").val("").text("— Bitte wählen —"));
+                    $region.append(
+                        $("<option/>")
+                            .val("")
+                            .text(t("ui.choose","— Please choose —"))
+                    );
 
                     regions.forEach(r => {
-                        $region.append($("<option/>").val(r.id).text(`${r.name} (${r.id})`).data("parts", r.parts));
+                        $region.append(
+                            $("<option/>")
+                                .val(r.id)
+                                .text(`${r.name} (${r.id})`)
+                                .data("parts", r.parts)
+                        );
                     });
 
                     if (preselectId) {
@@ -109,38 +149,40 @@
                 }
 
                 function populateParts(parts, preselectId) {
-                    setPartDisabled(false, "— Bitte wählen —");
+                    setPartDisabled(false, t("ui.choose","— Please choose —"));
                     parts.forEach(p => {
-                        $part.append($("<option/>").val(p.id).text(`${p.name} (${p.id})`));
+                        $part.append(
+                            $("<option/>")
+                                .val(p.id)
+                                .text(`${p.name} (${p.id})`)
+                        );
                     });
                     if (preselectId) {
                         $part.val(preselectId);
                     }
                 }
 
-                // Regionen laden
                 $.getJSON("dwd-pollen/regions")
                     .done(json => {
                         const regions = Array.isArray(json?.regions) ? json.regions : [];
-                        populateRegions(regions, this.regionId);
+                        populateRegions(regions, node.regionId);
 
                         const selected = $region.find("option:selected").data("parts");
                         if (selected && selected.length) {
-                            populateParts(selected, this.partregionId);
+                            populateParts(selected, node.partregionId);
                         } else {
                             setPartDisabled(true);
                         }
                     })
                     .fail(() => {
-                        setPartDisabled(true, "Laden der Regionen fehlgeschlagen");
+                        setPartDisabled(true, t("ui.loadRegionsFailed","Loading regions failed"));
                     });
 
-                // Change-Handler: Region → Teilregionen
-                $region.on("change", function() {
-                    const opt = $(this).find("option:selected");
+                $region.on("change", function () {
+                    const opt   = $(this).find("option:selected");
                     const parts = opt.data("parts") || [];
-                    const txt = opt.text();
-                    const m = txt.match(/^(.*)\s\(/);
+                    const txt   = opt.text();
+                    const m     = txt.match(/^(.*)\s\(/);
                     if (m) { $rName.val(m[1].trim()); }
 
                     if (parts.length) {
@@ -151,10 +193,9 @@
                     }
                 });
 
-                // Change-Handler: Teilregion → Namen setzen
-                $part.on("change", function() {
+                $part.on("change", function () {
                     const txt = $(this).find("option:selected").text();
-                    const m = txt.match(/^(.*)\s\(/);
+                    const m   = txt.match(/^(.*)\s\(/);
                     if (m) { $pName.val(m[1].trim()); }
                 });
             }
