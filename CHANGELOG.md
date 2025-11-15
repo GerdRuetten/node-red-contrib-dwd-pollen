@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.1.1] - 2025-11-15
+### Fixed
+- Release workflow corrected
+
 ## [1.1.0] - 2025-11-13
 ### Added
 - Full internationalization (i18n) support for all UI elements.
