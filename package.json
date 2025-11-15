@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-dwd-pollen",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Node-RED node to retrieve the official DWD pollen hazard index (s31fg.json) per region/partregion.",
   "license": "MIT",
   "author": {
