@@ -1,288 +1,157 @@
 # node-red-contrib-dwd-pollen
 
-Node-RED node to retrieve the official Deutscher Wetterdienst (DWD) Pollenflug-Gefahrenindex (s31fg.json).  
-Provides pollen hazard levels for today, tomorrow, and the day after tomorrow for regions and subregions in Germany.
-
-
-Information from the German Weather Service (DWD) on the pollen danger index can be found at: https://www.dwd.de/DE/leistungen/gefahrenindizespollen/gefahrenindexpollen.html
-
+A Node-RED node providing access to the official **DWD Pollenflugvorhersage** (pollen flight forecast) for 14 pollen types, with full internationalisation and a consistent interface shared with all DWD nodes.
 
 ---
 
-## 🌿 Features
+## ✨ Features
 
-- Uses official DWD Open Data `s31fg.json`  
-- Provides hazard levels for 8 pollen types
-  - Grasses
-  - Alder
-  - Ragweed
-  - Mugwort
-  - Birch
-  - Rye
-  - Ash
-  - Hazel 
-- Supports selection by Region-ID, Partregion-ID or Region-Name, Partregion-Name  
-- Options for fetch on deploy, auto-refresh interval, stale allow
-- Structured JSON output with timestamps  
-- Comfortable UI with dropdowns for region and subregion selection  
-- Auto-refresh configurable in seconds (0 disables)  
-- Direct link to official DWD area overview
+- Official **DWD Pollenflugvorhersage** (pollen forecast index)
+- Fully **i18n-enabled** (English / German)
+- Localised help pages & editor labels
+- Supports **14 DWD pollen types**
+- Structured JSON output ideal for dashboards & scorecards
+- Auto-refresh mode
+- “Fetch on deploy” option
+- Diagnostics mode for debugging
+- Consistent API across all DWD-related nodes
 
 ---
 
-## 🧩 Installation
+## 📦 Install
 
-### Using the Node-RED Palette Manager
-
-1. Open Node-RED in your browser
-2. Go to **Menu → Manage palette → Install**
-3. Search for **`node-red-contrib-dwd-pollen`**
-4. Click **Install**
-
-### Using command line (for Docker or local installations)
-
-```bash
-cd /data
-npm install --no-fund --no-audit GerdRuetten/node-red-contrib-dwd-pollen
-```
-
-or (if published on npm):
+From your Node-RED user directory (typically `~/.node-red`):
 
 ```bash
 npm install node-red-contrib-dwd-pollen
 ```
 
-If Node-RED runs inside Docker, execute from the container shell:
+Or via the Node-RED Palette Manager:
 
-```bash
-docker exec -u node-red -it node-red bash -lc 'cd /data && npm install --no-fund --no-audit GerdRuetten/node-red-contrib-dwd-pollen#master'
-```
-
-Then restart Node-RED.
-
----
-
-## 🛠️ Configuration
-
-| Setting              | Description                                                                                                   |
-|----------------------|---------------------------------------------------------------------------------------------------------------|
-| **Region**           | Select the main DWD region. List is loaded automatically.                    |
-| **Subregion**        | Select a finer subregion within the region. Dynamic list based on Region. |
-| **Fetch on deploy**  | Optional to send directly a request to DWD after deploy.                                                      |
-| **Auto-Refresh (s)** | Optional interval in seconds to auto-fetch the pollen feed. Set to 0 to disable auto-refresh.                 |
-| **Stale allow**      | Optional to use cached datas.                                                                                 |
+1. Open the Node-RED editor
+2. Menu → **Manage palette**
+3. Tab **Install**
+4. Search for **`node-red-contrib-dwd-pollen`**
+5. Click **Install**
 
 ---
 
-## 📤 Example Output
+## 🔧 Configuration
+
+### Name
+Optional display name for the node.
+
+### Auto-refresh (sec)
+If greater than `0`, the node fetches pollen data periodically.
+
+### Fetch on deploy
+When enabled, the node performs an initial fetch shortly after the flow is deployed.
+
+### Diagnostics
+Writes detailed debug information to the Node-RED log.
+
+---
+
+## 🔌 Inputs
+
+Any incoming message triggers a fetch of pollen data using the current configuration.
+
+---
+
+## 📤 Outputs
+
+The node outputs the DWD pollen levels in the following structure:
 
 ```json
 {
-  "payload":[
-    {
-      "partregion_name":"Rhein.-Westfäl. Tiefland",
-      "region_id":40,
-      "region_name":"Nordrhein-Westfalen",
-      "Pollen":{
-        "Graeser":{
-          "tomorrow":"0",
-          "dayafter_to":"0",
-          "today":"0",
-          "today_desc":"keine Belastung",
-          "tomorrow_desc":"keine Belastung",
-          "dayafter_to_desc":"keine Belastung"
-        },
-        "Erle":{
-          "dayafter_to":"0",
-          "today":"0",
-          "tomorrow":"0",
-          "today_desc":"keine Belastung",
-          "tomorrow_desc":"keine Belastung",
-          "dayafter_to_desc":"keine Belastung"
-        },
-        "Ambrosia":{
-          "dayafter_to":"0",
-          "today":"0",
-          "tomorrow":"0",
-          "today_desc":"keine Belastung",
-          "tomorrow_desc":"keine Belastung",
-          "dayafter_to_desc":"keine Belastung"
-        },
-        "Beifuss":{
-          "today":"0",
-          "dayafter_to":"0",
-          "tomorrow":"0",
-          "today_desc":"keine Belastung",
-          "tomorrow_desc":"keine Belastung",
-          "dayafter_to_desc":"keine Belastung"
-        },
-        "Birke":{
-          "today":"0",
-          "dayafter_to":"0",
-          "tomorrow":"0",
-          "today_desc":"keine Belastung",
-          "tomorrow_desc":"keine Belastung",
-          "dayafter_to_desc":"keine Belastung"
-        },
-        "Roggen":{
-          "dayafter_to":"0",
-          "today":"0",
-          "tomorrow":"0",
-          "today_desc":"keine Belastung",
-          "tomorrow_desc":"keine Belastung",
-          "dayafter_to_desc":"keine Belastung"
-        },
-        "Esche":{
-          "dayafter_to":"0",
-          "today":"0",
-          "tomorrow":"0",
-          "today_desc":"keine Belastung",
-          "tomorrow_desc":"keine Belastung",
-          "dayafter_to_desc":"keine Belastung"
-        },
-        "Hasel":{
-          "dayafter_to":"0",
-          "today":"0",
-          "tomorrow":"0",
-          "today_desc":"keine Belastung",
-          "tomorrow_desc":"keine Belastung",
-          "dayafter_to_desc":"keine Belastung"
-        }
-      },
-      "partregion_id":41
-    }
-  ],
-  "meta":{
-    "source":"https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json",
-    "count":1,
-    "regionId":"40",
-    "partregionId":"41",
-    "regionName":"Nordrhein-Westfalen",
-    "partregionName":null,
-    "autoRefreshSec":3600,
-    "fetchedAt":"2025-11-09T17:58:36.017Z",
-    "initialFetch":false
-  },
-  "_msgid":"05e170f7b7b9f15f"
+  "timestamp": "2025-04-05T12:00:00Z",
+  "region": "Germany",
+  "pollen": {
+    "hazel": 1,
+    "alder": 2,
+    "birch": 3,
+    "grass": 0,
+    "rye": 0,
+    "mugwort": 1,
+    "ragweed": 0,
+    "ash": 2,
+    "oak": 1,
+    "beech": 0,
+    "plane": 0,
+    "maple": 1,
+    "willow": 2,
+    "poplar": 0
+  }
 }
 ```
 
----
-
-## 💡 Tips
-
-- Use the dropdowns to easily select your desired region and subregion without needing to know IDs.  
-- Set Auto-Refresh to a positive number (seconds) to keep pollen data updated automatically.  
-- For detailed area information visit the official DWD pollen hazard index regions page:  
-  https://www.dwd.de/DE/leistungen/gefahrenindizespollen/Gebiete.html
-- Informat
+Index values follow the DWD scale `0–3`.
 
 ---
 
-## 📡 Data Source
+## 🔎 Status text
 
-This node uses the official Deutscher Wetterdienst (DWD) Open Data feed `s31fg.json` for pollen hazard indices. 
-URL to Data source: https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json
+The node reports its state using status messages:
 
----
+- **loading…** – data is being fetched
+- **ready** – idle, waiting for input or refresh
+- **ok** – data successfully retrieved
+- **error** – an error occurred
 
-## ⚖️ License
-
-MIT © 2025 [Gerd Rütten](https://github.com/GerdRuetten)
-
----
-
-## 📝 Changelog
-
-See [CHANGELOG.md](./CHANGELOG.md) for details.
+These messages are fully localised.
 
 ---
 
-## 🔧 Example Flow
+## 🌍 Internationalisation (i18n)
 
-```json
-[
-  {
-    "id":"fb13b9cb3a2b49be",
-    "type":"dwd-pollen",
-    "z":"9b8a26582f09a98b",
-    "name":"",
-    "regionId":"40",
-    "partregionId":"41",
-    "regionName":"Nordrhein-Westfalen",
-    "partregionName":"",
-    "fetchOnDeploy":true,
-    "autoRefreshSec":"3600",
-    "x":250,
-    "y":120,
-    "wires":[
-      [
-        "6d04249e285bc20b"
-      ]
-    ]
-  },
-  {
-    "id":"6d04249e285bc20b",
-    "type":"debug",
-    "z":"9b8a26582f09a98b",
-    "name":"debug 1",
-    "active":true,
-    "tosidebar":true,
-    "console":false,
-    "tostatus":false,
-    "complete":"true",
-    "targetType":"full",
-    "statusVal":"",
-    "statusType":"auto",
-    "x":500,
-    "y":120,
-    "wires":[
+All editor labels, help pages, tooltips and runtime messages are translated via:
 
-    ]
-  },
-  {
-    "id":"8794b4f80223853a",
-    "type":"inject",
-    "z":"9b8a26582f09a98b",
-    "name":"",
-    "props":[
-      {
-        "p":"payload"
-      },
-      {
-        "p":"topic",
-        "vt":"str"
-      }
-    ],
-    "repeat":"",
-    "crontab":"",
-    "once":false,
-    "onceDelay":0.1,
-    "topic":"",
-    "payload":"",
-    "payloadType":"date",
-    "x":100,
-    "y":120,
-    "wires":[
-      [
-        "fb13b9cb3a2b49be"
-      ]
-    ]
-  },
-  {
-    "id":"7cbd752df1d14dab",
-    "type":"global-config",
-    "env":[
+- `nodes/locales/en-US/dwd-pollen.json`
+- `nodes/locales/de/dwd-pollen.json`
 
-    ],
-    "modules":{
-      "node-red-contrib-dwd-pollen":"1.0.3"
-    }
-  }
-]
+The help text is also localised:
+
+- `nodes/locales/en-US/dwd-pollen.html`
+- `nodes/locales/de/dwd-pollen.html`
+
+The editor language controls which version is shown.
+
+---
+
+## 🧪 Example flow
+
+A basic example flow is included in:
+
+```
+examples/dwd-pollen-basic.json
 ```
 
+Import via:
+
+1. Node-RED menu → **Import**
+2. Choose **Clipboard**
+3. Paste the JSON
+4. Click **Import**
+
+This flow demonstrates:
+
+- Fetch-on-deploy
+- Manual triggers
+- Viewing results in Debug nodes
+
 ---
 
-> ⚠️ **node-red-contrib-dwd-pollen** — bringing official DWD pollen index directly into your Node-RED flows.
-</file>
+## 🗺️ Roadmap
+
+Planned enhancements:
+
+- Optional regional pollen data
+- Historical pollen values
+- Dashboard visualisation components
+- Combined output for multi-day forecasts
+- Additional pollen metadata and explanations
+
+---
+
+> ⚠️ **node-red-contrib-dwd-pollen** — bringing official DWD Pollenflugvorhersage directly into your Node-RED flows.
+

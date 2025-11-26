@@ -23,7 +23,8 @@
   "ui": {
     "choose": "— Please choose —",
     "chooseRegion": "— Please choose a region —",
-    "loadRegionsFailed": "Loading regions failed"
+    "loadRegionsFailed": "Loading regions failed",
+    "autoRefreshPlaceholder": "0 = off"
   },
   "help": {
     "title": "DWD Pollen1",
@@ -33,11 +34,21 @@
     "flow3": "At runtime, msg.regionId/msg.partregionId can override the configuration."
   },
   "runtime": {
-    "statusOk": "OK ({count})",
-    "statusStale": "stale ({count})",
-    "statusAutoRefresh": "Auto-Refresh {seconds}s",
+    "statusOk": "OK (__count__)",
+    "statusStale": "stale (__count__)",
+    "statusAutoRefresh": "Auto-Refresh __seconds__s",
     "errorMissingRegionOrPart": "Please configure a region or partregion (regionId/partregionId).",
-    "errorInit": "Initialisation error: {error}",
-    "errorFetchFailed": "Fetch failed: {error}"
+    "errorInit": "Initialisation error: __error__",
+    "errorFetchFailed": "Fetch failed: __error__",
+    "level": {
+      "0": "no burden",
+      "0-1": "no to low burden",
+      "1": "low burden",
+      "1-2": "low to medium burden",
+      "2": "medium burden",
+      "2-3": "medium to high burden",
+      "3": "high burden"
+    },
+    "levelUnknown": "unknown"
   }
 }

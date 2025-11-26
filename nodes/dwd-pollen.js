@@ -9,7 +9,7 @@
  */
 module.exports = function (RED) {
     const axios = require("axios");
-
+    const node = this;
     const NS = "node-red-contrib-dwd-pollen/dwd-pollen";
 
     function t(key, opts) {
@@ -65,20 +65,22 @@ module.exports = function (RED) {
     });
 
     // ---------- Hilfsfunktion: Wert -> Beschreibung (0..3 / "0-1" / "1-2" / "2-3") ----------
-    // Hinweis: aktuell nicht i18n-isiert, Texte sind Deutsch.
+    // Jetzt i18n-fähig: Texte kommen aus nodes/locales/<lang>/dwd-pollen.json (runtime.level.*)
     function describeLevel(raw) {
         if (raw === null || raw === undefined) return null;
         const key = String(raw).trim();
-        switch (key) {
-            case "0":   return "keine Belastung";
-            case "0-1": return "keine bis geringe Belastung";
-            case "1":   return "geringe Belastung";
-            case "1-2": return "geringe bis mittlere Belastung";
-            case "2":   return "mittlere Belastung";
-            case "2-3": return "mittlere bis hohe Belastung";
-            case "3":   return "hohe Belastung";
-            default:    return "unbekannt";
+
+        // Versuche, eine lokalisierte Beschreibung zu laden, z.B. runtime.level.0-1
+        const i18nKey = `runtime.level.${key}`;
+        const translated = t(i18nKey);
+
+        // Wenn keine Übersetzung gefunden wurde, liefert RED._ den Key selbst zurück
+        if (translated && translated !== i18nKey) {
+            return translated;
         }
+
+        // Fallback: lokalisierter "unbekannt"-Text
+        return t("runtime.levelUnknown") || key;
     }
 
     // --------------------------- Runtime-Node -------------------------------
@@ -155,8 +157,6 @@ module.exports = function (RED) {
                     count: enriched.length,
                     regionId: regionId || null,
                     partregionId: partId || null,
-                    regionName: node.regionName || null,
-                    partregionName: node.partregionName || null,
                     autoRefreshSec: node.autoRefreshSec || 0,
                     fetchedAt: new Date().toISOString(),
                     initialFetch: !!(trigger && trigger.initial),
@@ -167,8 +167,7 @@ module.exports = function (RED) {
                 // Letzten Erfolg merken
                 lastGood = { payload: enriched, _meta };
 
-                // Für Abwärtskompatibilität meta ≡ _meta beilegen
-                const msg = { payload: enriched, _meta, meta: _meta };
+                const msg = { payload: enriched, _meta };
 
                 node.status({
                     fill: "green",
@@ -196,7 +195,7 @@ module.exports = function (RED) {
                         staleAt: new Date().toISOString(),
                         error: String(err.message || err)
                     };
-                    const msg = { payload: lastGood.payload, _meta: staleMeta, meta: staleMeta };
+                    const msg = { payload: lastGood.payload, _meta: staleMeta };
                     node.status({
                         fill: "yellow",
                         shape: "ring",

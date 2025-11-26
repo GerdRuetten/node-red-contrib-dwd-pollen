@@ -11,14 +11,12 @@
 
         <dt>Region / Subregion</dt>
         <dd>
-            Select a region and a subregion from the DWD catalogue.
-            The lists are fetched from the official DWD JSON feed.
+            Select a region and optionally a subregion. Your selection determines which pollen
+            data will be fetched from the German Weather Service (DWD).
         </dd>
-
-        <dt>Region name / Subregion name</dt>
         <dd>
-            These fields are filled automatically when you pick a region/subregion.
-            You can override them manually if you want custom display names.
+            The region names are taken directly from the DWD data and do not require additional
+            configuration.
         </dd>
 
         <dt>Fetch on deploy</dt>
@@ -80,7 +78,7 @@
             </ul>
         </dd>
 
-        <dt>msg._meta / msg.meta</dt>
+        <dt>msg._meta</dt>
         <dd>
             Metadata about the fetch, for example:
             <ul>

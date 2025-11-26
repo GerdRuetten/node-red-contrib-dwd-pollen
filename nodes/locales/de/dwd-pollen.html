@@ -13,14 +13,13 @@
 
         <dt>Region / Teilregion</dt>
         <dd>
-            Wähle eine Region und eine Teilregion aus dem DWD-Katalog.
-            Die Listen werden aus dem offiziellen DWD JSON-Feed geladen.
+            Wähle eine Region und optional eine Teilregion aus der Liste aus.
+            Die Auswahl bestimmt, welche Polleninformationen vom Deutschen
+            Wetterdienst (DWD) abgerufen werden.
         </dd>
-
-        <dt>Regionsname / Teilregionsname</dt>
         <dd>
-            Diese Felder werden beim Auswählen automatisch gesetzt.
-            Du kannst sie aber manuell überschreiben, wenn du eigene Bezeichnungen verwenden möchtest.
+            Die Klartextnamen werden direkt aus den DWD-Daten übernommen und müssen nicht
+            separat konfiguriert werden.
         </dd>
 
         <dt>Beim Deploy abrufen</dt>
@@ -85,7 +84,7 @@
             </ul>
         </dd>
 
-        <dt>msg._meta / msg.meta</dt>
+        <dt>msg._meta</dt>
         <dd>
             Metadaten zum Abruf, u. a.:
             <ul>

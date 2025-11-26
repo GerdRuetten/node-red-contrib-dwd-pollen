@@ -1,8 +1,47 @@
 # Changelog
 
-## [1.1.1] - 2025-11-15
+All notable changes to this project will be documented in this file.
+
+## Unreleased
+
+- (none)
+
+## [1.2.1] - 2025-11-26
+### Changed
+- Removed the unused configuration fields **Region Name** and **Subregion Name** from the editor UI  
+  (these values are no longer required and caused confusion).
+- Cleaned up the editor logic (`oneditprepare`) to remove all code related to those fields.
+- Simplified the node configuration: only **regionId** and **partregionId** are stored now.
+- Updated help files (`dwd-pollen.html`) in both languages to reflect the streamlined UI.
+
 ### Fixed
-- Release workflow corrected
+- Removed the legacy `msg.meta` output field.  
+  The node now outputs metadata exclusively under **`msg._meta`**.
+- Replaced incorrect translation variables (`{count}`, `{error}`, `{seconds}`)  
+  with the correct Node-RED i18n placeholders (`__count__`, `__error__`, `__seconds__`).
+
+### Improved
+- Cleaned up locale JSON files by removing unused keys related to the removed fields.
+- Ensured consistency with the i18n patterns established in the `node-red-contrib-i18n-test` node.
+
+## [1.2.0] - 2025-11-16
+### Added
+- Fully rewritten **English README** (modern layout, consistent with entire DWD node family)
+- Brand-new **German README (`README_de.md`)**
+- Updated and standardised **example flow** (`examples/dwd-pollen-basic.json`)
+- Detailed installation instructions (including Node-RED Palette Manager)
+
+### Changed
+- Documentation structure unified across all DWD nodes (Pollen, Forecast, Warnings, Rainradar)
+- Improved i18n explanations and clarified translator file structure
+- General wording and help text clean-up
+
+### Fixed
+- Removed outdated and inconsistent documentation sections
+- Minor formatting and markdown corrections
+
+### CI
+- Automatically mark `-beta`, `-alpha` and `-rc` tags as **GitHub pre-releases**.
 
 ## [1.1.0] - 2025-11-13
 ### Added

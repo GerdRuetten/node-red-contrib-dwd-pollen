@@ -1,7 +1,7 @@
 <script type="text/html" data-template-name="dwd-pollen">
     <div class="form-row">
         <label for="node-input-name" data-i18n="label.name">Name</label>
-        <input type="text" id="node-input-name" placeholder="DWD Pollen" />
+        <input type="text" id="node-input-name" placeholder="DWD Pollen" data-i18n="[placeholder]label.defaultName" />
     </div>
 
     <div class="form-row">
@@ -16,16 +16,6 @@
         <select id="node-input-partregionId" style="width: 100%;" disabled>
             <option value="" data-i18n="ui.chooseRegion">— Please choose a region —</option>
         </select>
-    </div>
-
-    <div class="form-row">
-        <label for="node-input-regionName" data-i18n="label.regionName"><i class="fa fa-tag"></i> Region name</label>
-        <input type="text" id="node-input-regionName" placeholder="(optional, set when selecting)">
-    </div>
-
-    <div class="form-row">
-        <label for="node-input-partregionName" data-i18n="label.partregionName"><i class="fa fa-tag"></i> Subregion name</label>
-        <input type="text" id="node-input-partregionName" placeholder="(optional, set when selecting)">
     </div>
 
     <div class="form-tips" style="margin-left: 10px;" data-i18n="tips.source">
@@ -49,7 +39,7 @@
             <i class="fa fa-refresh"></i>
             <span data-i18n="label.autoRefresh">Auto-refresh (sec)</span>
         </label>
-        <input type="number" id="node-input-autoRefreshSec" min="0" step="1" placeholder="0 = off">
+        <input type="number" id="node-input-autoRefreshSec" min="0" step="1" placeholder="0 = off" data-i18n="[placeholder]ui.autoRefreshPlaceholder">
         <div class="form-tips" data-i18n="tips.autoRefresh">
             Interval for automatic fetches in seconds. 0 = disabled.
         </div>
@@ -103,8 +93,6 @@
                 const node  = this;
                 const $region = $("#node-input-regionId");
                 const $part   = $("#node-input-partregionId");
-                const $rName  = $("#node-input-regionName");
-                const $pName  = $("#node-input-partregionName");
 
                 function t(key, fallback) {
                     const s = node._(key);
@@ -181,22 +169,12 @@
                 $region.on("change", function () {
                     const opt   = $(this).find("option:selected");
                     const parts = opt.data("parts") || [];
-                    const txt   = opt.text();
-                    const m     = txt.match(/^(.*)\s\(/);
-                    if (m) { $rName.val(m[1].trim()); }
 
                     if (parts.length) {
                         populateParts(parts, "");
                     } else {
                         setPartDisabled(true);
-                        $pName.val("");
                     }
-                });
-
-                $part.on("change", function () {
-                    const txt = $(this).find("option:selected").text();
-                    const m   = txt.match(/^(.*)\s\(/);
-                    if (m) { $pName.val(m[1].trim()); }
                 });
             }
         });

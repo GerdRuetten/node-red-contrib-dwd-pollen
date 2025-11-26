@@ -1,79 +1,68 @@
 [
   {
-    "id":"fb13b9cb3a2b49be",
-    "type":"dwd-pollen",
-    "z":"9b8a26582f09a98b",
-    "name":"",
-    "regionId":"40",
-    "partregionId":"41",
-    "regionName":"Nordrhein-Westfalen",
-    "partregionName":"",
-    "fetchOnDeploy":true,
-    "autoRefreshSec":"3600",
-    "x":250,
-    "y":120,
-    "wires":[
-      [
-        "6d04249e285bc20b"
-      ]
-    ]
+    "id": "pollenex1",
+    "type": "tab",
+    "label": "DWD Pollen - Basic Example"
   },
   {
-    "id":"6d04249e285bc20b",
-    "type":"debug",
-    "z":"9b8a26582f09a98b",
-    "name":"debug 1",
-    "active":true,
-    "tosidebar":true,
-    "console":false,
-    "tostatus":false,
-    "complete":"true",
-    "targetType":"full",
-    "statusVal":"",
-    "statusType":"auto",
-    "x":500,
-    "y":120,
-    "wires":[
-
-    ]
-  },
-  {
-    "id":"8794b4f80223853a",
-    "type":"inject",
-    "z":"9b8a26582f09a98b",
-    "name":"",
-    "props":[
+    "id": "inj1",
+    "type": "inject",
+    "z": "pollenex1",
+    "name": "Trigger pollen fetch",
+    "props": [
       {
-        "p":"payload"
-      },
-      {
-        "p":"topic",
-        "vt":"str"
+        "p": "payload"
       }
     ],
-    "repeat":"",
-    "crontab":"",
-    "once":false,
-    "onceDelay":0.1,
-    "topic":"",
-    "payload":"",
-    "payloadType":"date",
-    "x":100,
-    "y":120,
-    "wires":[
+    "repeat": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "",
+    "payloadType": "date",
+    "x": 180,
+    "y": 120,
+    "wires": [
       [
-        "fb13b9cb3a2b49be"
+        "pollen1"
       ]
     ]
   },
   {
-    "id":"7cbd752df1d14dab",
-    "type":"global-config",
-    "env":[
-
-    ],
-    "modules":{
-      "node-red-contrib-dwd-pollen":"1.0.3"
-    }
+    "id": "pollen1",
+    "type": "dwd-pollen",
+    "z": "pollenex1",
+    "name": "",
+    "autoRefresh": "0",
+    "fetchOnDeploy": true,
+    "diag": false,
+    "x": 390,
+    "y": 120,
+    "wires": [
+      [
+        "dbg1"
+      ]
+    ]
+  },
+  {
+    "id": "dbg1",
+    "type": "debug",
+    "z": "pollenex1",
+    "name": "Pollen result",
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "x": 620,
+    "y": 120,
+    "wires": []
+  },
+  {
+    "id": "com1",
+    "type": "comment",
+    "z": "pollenex1",
+    "name": "DWD Pollen - Basic Example",
+    "info": "Demonstrates basic usage of the DWD Pollen node:\n\n- Fetch on deploy\n- Manual trigger via Inject node\n- Output shown via Debug node\n\nCompatible with dashboards and scorecards.",
+    "x": 310,
+    "y": 60,
+    "wires": []
   }
 ]

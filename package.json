@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-dwd-pollen",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Node-RED node to retrieve the official DWD pollen hazard index (s31fg.json) per region/partregion.",
   "license": "MIT",
   "author": {
@@ -9,6 +9,10 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/GerdRuetten/node-red-contrib-dwd-pollen.git"
+  },
+  "homepage": "https://github.com/GerdRuetten/node-red-contrib-dwd-pollen#readme",
+  "bugs": {
+    "url": "https://github.com/GerdRuetten/node-red-contrib-dwd-pollen/issues"
   },
   "keywords": [
     "node-red",
@@ -19,16 +23,28 @@
     "weather"
   ],
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "files": [
+    "nodes/",
+    "README.md",
+    "CHANGELOG.md",
+    "examples/"
+  ],
+  "dependencies": {
+    "axios": "^1.7.7",
+    "moment-timezone": "^0.5.46"
+  },
+  "scripts": {
+    "preversion": "node scripts/ensure-changelog.js",
+    "version": "echo 'Version bump handled automatically by npm version'",
+    "postversion": "git push --follow-tags"
   },
   "node-red": {
     "version": ">=3.0.0",
     "nodes": {
       "dwd-pollen": "nodes/dwd-pollen.js"
     }
-  },
-  "dependencies": {
-    "axios": "^1.7.7",
-    "moment-timezone": "^0.5.46"
   }
 }

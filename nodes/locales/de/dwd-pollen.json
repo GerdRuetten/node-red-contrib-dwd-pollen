@@ -5,8 +5,6 @@
     "name": "Name",
     "region": "Region",
     "partregion": "Teilregion",
-    "regionName": "Regionsname",
-    "partregionName": "Teilregionsname",
     "fetchOnDeploy": "Beim Deploy abrufen",
     "autoRefresh": "Auto-Refresh (Sek.)",
     "staleAllow": "Stale erlauben"
@@ -23,7 +21,8 @@
   "ui": {
     "choose": "— Bitte wählen —",
     "chooseRegion": "— Bitte Region wählen —",
-    "loadRegionsFailed": "Laden der Regionen fehlgeschlagen"
+    "loadRegionsFailed": "Laden der Regionen fehlgeschlagen",
+    "autoRefreshPlaceholder": "0 = aus"
   },
   "help": {
     "title": "DWD Pollen3",
@@ -33,11 +32,21 @@
     "flow3": "Zur Laufzeit können msg.regionId/msg.partregionId die Konfiguration überschreiben."
   },
   "runtime": {
-    "statusOk": "OK ({count})",
-    "statusStale": "stale ({count})",
-    "statusAutoRefresh": "Auto-Refresh {seconds}s",
+    "statusOk": "OK (__count__)",
+    "statusStale": "stale (__count__)",
+    "statusAutoRefresh": "Auto-Refresh __seconds__s",
     "errorMissingRegionOrPart": "Bitte Region oder Teilregion konfigurieren (regionId/partregionId).",
-    "errorInit": "Initialisierungsfehler: {error}",
-    "errorFetchFailed": "Abruf fehlgeschlagen: {error}"
+    "errorInit": "Initialisierungsfehler: __error__",
+    "errorFetchFailed": "Abruf fehlgeschlagen: __error__",
+    "level": {
+      "0": "keine Belastung",
+      "0-1": "keine bis geringe Belastung",
+      "1": "geringe Belastung",
+      "1-2": "geringe bis mittlere Belastung",
+      "2": "mittlere Belastung",
+      "2-3": "mittlere bis hohe Belastung",
+      "3": "hohe Belastung"
+    },
+    "levelUnknown": "unbekannt"
   }
 }
