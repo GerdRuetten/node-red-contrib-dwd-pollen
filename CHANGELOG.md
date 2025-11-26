@@ -6,6 +6,19 @@ All notable changes to this project will be documented in this file.
 
 - (none)
 
+## [1.2.2] - 2025-11-26
+### Changed
+- Updated package metadata and internal project structure following NPM publish conflict with version **1.2.1**.
+- Version bump to ensure consistent tagging and publishing workflow.
+
+### Fixed
+- Removed stray `.DS_Store` and Autostash artefacts from the repository.
+- Cleaned up git history by squashing duplicate `Release 1.2.1` commits.
+
+### Internal
+- Ensured the repository state matches the published package on NPM.
+- Adjusted versioning to restore a clean release chain.
+
 ## [1.2.1] - 2025-11-26
 ### Changed
 - Removed the unused configuration fields **Region Name** and **Subregion Name** from the editor UI  
